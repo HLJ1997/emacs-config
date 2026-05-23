@@ -230,19 +230,31 @@
 (define-key company-active-map (kbd "C-p") 'company-select-previous)
 (define-key company-active-map (kbd "TAB") 'company-complete-selection)
 
-;; Ubuntu 22.04 GCC 11 include paths for company-clang
+;; Auto-detect GCC default include paths for company-clang
+;; Falls back to Ubuntu 22.04 GCC 11 paths if gcc is not available
+(defun my-gcc-include-paths ()
+  "Return GCC default C++ include paths."
+  (let ((gcc-output (shell-command-to-string "gcc -xc++ -E -v /dev/null 2>&1")))
+    (if (string-match "#include <\\.\\.\\.> search starts here:\\([\\s\\S]*?\\)End of search list." gcc-output)
+        (delq nil
+              (mapcar (lambda (line)
+                        (let ((trimmed (string-trim line)))
+                          (when (and (> (length trimmed) 0)
+                                     (file-directory-p trimmed))
+                            trimmed)))
+                      (split-string (match-string 1 gcc-output) "\n")))
+      ;; Fallback: Ubuntu 22.04 GCC 11 hardcoded paths
+      '("/usr/include/c++/11"
+        "/usr/include/x86_64-linux-gnu/c++/11"
+        "/usr/include/c++/11/backward"
+        "/usr/lib/gcc/x86_64-linux-gnu/11/include"
+        "/usr/local/include"
+        "/usr/lib/gcc/x86_64-linux-gnu/11/include-fixed"
+        "/usr/include/x86_64-linux-gnu"
+        "/usr/include"))))
+
 (setq company-clang-arguments
-      (mapcar (lambda (item) (concat "-I" item))
-              (split-string "
- /usr/include/c++/11
- /usr/include/x86_64-linux-gnu/c++/11
- /usr/include/c++/11/backward
- /usr/lib/gcc/x86_64-linux-gnu/11/include
- /usr/local/include
- /usr/lib/gcc/x86_64-linux-gnu/11/include-fixed
- /usr/include/x86_64-linux-gnu
- /usr/include
-")))
+      (mapcar (lambda (path) (concat "-I" path)) (my-gcc-include-paths)))
 
 ;; Add clang backend for C/C++ modes
 (defun my-company-cc-mode-setup ()
