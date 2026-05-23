@@ -1,5 +1,6 @@
 # Emacs runtime files
 auto-save-list/
+eln-cache/
 ac-comphist.dat
 bookmarks
 *.elc
