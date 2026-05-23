@@ -445,6 +445,27 @@
     (shell)
     (rename-buffer (format "shell-%03d" (- count n 1)))))
 
+(defun my-create-next-4-shells ()
+  "Create 4 new numbered shell buffers, continuing from the highest existing number."
+  (interactive)
+  (let ((max-num -1))
+    ;; Find the highest existing shell number
+    (dolist (buf (buffer-list))
+      (let ((name (buffer-name buf)))
+        (when (string-match "^shell-\\([0-9]+\\)$" name)
+          (let ((num (string-to-number (match-string 1 name))))
+            (when (> num max-num)
+              (setq max-num num))))))
+    ;; Create 4 new shells starting from max-num + 1
+    (dotimes (n 4)
+      (shell)
+      (rename-buffer (format "shell-%03d" (+ max-num 1 n))))
+    ;; Switch to the first of the newly created shells
+    (switch-to-buffer (format "shell-%03d" (+ max-num 1)))))
+
+;; Bind C-c s to create 4 shells at a time
+(global-set-key (kbd "C-c s") 'my-create-next-4-shells)
+
 ;; =================================================================
 ;; GDB
 ;; =================================================================
