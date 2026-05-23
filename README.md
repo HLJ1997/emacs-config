@@ -179,6 +179,23 @@ emacs --batch --eval "(package-refresh-contents)" --eval "(package-install '<插
 
 ---
 
+## Claude Code Skill
+
+本仓库包含 Claude Code skill，方便在 Claude Code 中快速管理配置：
+
+```bash
+ln -sf ~/emacs-config/.claude/skills/emacs-config.md ~/.claude/skills/emacs-config.md
+```
+
+在 Claude Code 中输入 `/emacs-config` 即可加载，支持：
+- 查看项目结构和常用操作
+- 快速编辑 `init.el` 的标准流程
+- 添加新快捷键的模板
+- 推送到 GitHub 的命令
+- 故障排查（启动失败、push 超时、company-clang 问题）
+
+---
+
 ## 许可证
 
 [MIT](LICENSE)
