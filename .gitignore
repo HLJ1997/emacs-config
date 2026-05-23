@@ -1,0 +1,12 @@
+# Emacs runtime files
+auto-save-list/
+ac-comphist.dat
+bookmarks
+*.elc
+tramp
+
+# Session files
+session.*
+
+# OS files
+.DS_Store
