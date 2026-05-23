@@ -11,8 +11,14 @@
 ;; =================================================================
 (require 'package)
 (add-to-list 'package-archives
-             '("melpa-stable" . "https://stable.melpa.org/packages/") t)
+             '("melpa" . "https://melpa.org/packages/") t)
 (package-initialize)
+
+;; =================================================================
+;; Custom File (keep Customize variables out of init.el)
+;; =================================================================
+(setq custom-file (expand-file-name "custom.el" user-emacs-directory))
+(load custom-file t nil t)
 
 ;; =================================================================
 ;; External Tools (from old config)
@@ -64,6 +70,10 @@
 ;; Auto-display images
 (auto-image-file-mode t)
 
+;; Load built-in Info reader and MSB (Mouse Buffer Menu) enhancements
+(load "info" nil t)
+(load "msb" nil t)
+
 ;; =================================================================
 ;; CUA Mode (Windows-style editing keys)
 ;; =================================================================
@@ -102,6 +112,30 @@
   (condition-case nil
       (set-face-attribute 'default nil :font "JetBrains Mono-16")
     (error (message "Failed to set JetBrains Mono font, using default."))))
+
+;; Chinese font fallback
+(defvar my/chinese-font "Noto Sans CJK SC"
+  "Fallback Chinese font.")
+
+(defun my/set-font-fallbacks ()
+  "Set up Chinese font fallbacks."
+  (when (display-graphic-p)
+    (dolist (charset '(kana han cjk-misc bopomofo symbol))
+      (set-fontset-font t charset (font-spec :family my/chinese-font)))))
+
+(my/set-font-fallbacks)
+(add-hook 'after-make-frame-functions
+          (lambda (frame)
+            (when (display-graphic-p frame)
+              (my/set-font-fallbacks))))
+
+;; Font zoom keys
+(global-set-key (kbd "C-=") (lambda () (interactive)
+                                (let ((ht (face-attribute 'default :height)))
+                                  (set-face-attribute 'default nil :height (+ ht 10)))))
+(global-set-key (kbd "C--") (lambda () (interactive)
+                                (let ((ht (face-attribute 'default :height)))
+                                  (set-face-attribute 'default nil :height (- ht 10)))))
 
 ;; Color theme
 (setq ansi-color-names-vector
@@ -387,32 +421,32 @@
 (defun copy-to-register-t (start end)
   "Copy region to register t."
   (interactive "r")
-  (copy-to-register t start end)
+  (copy-to-register ?t start end)
   (if transient-mark-mode (setq deactivate-mark t)))
 
 (defun insert-register-t (pos)
   "Insert register t at POS."
   (interactive "d")
-  (insert-register t 1))
+  (insert-register ?t 1))
 
 ;; Replace helpers
 (defun query-replace-reg-t (to-string)
   "Query replace with register t content."
   (interactive
    (let ((to (read-from-minibuffer
-              (format "Query-replace \"%s\" with: " (get-register t))
+              (format "Query-replace \"%s\" with: " (get-register ?t))
               nil nil nil query-replace-to-history-variable nil t)))
      (list to)))
-  (perform-replace (get-register t) to-string t nil nil))
+  (perform-replace (get-register ?t) to-string t nil nil))
 
 (defun replace-string-reg-t (to-string)
   "Replace string with register t content."
   (interactive
    (let ((to (read-from-minibuffer
-              (format "Replace \"%s\" with: " (get-register t))
+              (format "Replace \"%s\" with: " (get-register ?t))
               nil nil nil query-replace-to-history-variable nil t)))
      (list to)))
-  (perform-replace (get-register t) to-string nil nil nil))
+  (perform-replace (get-register ?t) to-string nil nil nil))
 
 ;; Password prompt suppression
 (defcustom comint-password-prompt-regexp
@@ -488,7 +522,8 @@
 ;; =================================================================
 (require 'dired-x)
 (setq dired-use-ls-dired t)
-(setq dired-listing-switches "-alh --group-directories-first")
+(setq dired-listing-switches "-alh --group-directories-first --color=auto")
+(global-set-key (kbd "C-x C-j") 'dired-jump)
 
 ;; diredfl and all-the-icons-dired (install via M-x package-install if missing)
 (when (require 'diredfl nil t)
