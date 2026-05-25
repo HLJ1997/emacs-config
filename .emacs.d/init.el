@@ -35,6 +35,18 @@
 (setq make-backup-files nil)
 (setq auto-save-mode nil)
 
+;; Use bash as default shell for both M-x shell and shell-command
+(setq explicit-shell-file-name "/bin/bash")
+(setq shell-file-name "/bin/bash")
+
+;; Environment detection: WSL vs remote server
+(defvar my/is-wsl
+  (let ((version (with-temp-buffer
+                   (insert-file-contents "/proc/version")
+                   (buffer-string))))
+    (string-match-p "microsoft\\|WSL" version))
+  "Non-nil if running under WSL.")
+
 ;; Clipboard integration
 (setq x-select-enable-clipboard t)
 (setq mouse-yank-at-point t)
@@ -171,8 +183,8 @@
   (let ((title (format "Emacs@%s — %s" (system-name) (my/get-server-ip))))
     ;; Set Emacs frame title
     (setq frame-title-format title)
-    ;; Write to terminal (xterm/SSH) window title bar
-    (when my/tty-device
+    ;; Write to terminal (xterm/SSH) window title bar — skip on WSL
+    (when (and my/tty-device (not my/is-wsl))
       (ignore-errors
         (write-region (format "\033]0;%s\007" title)
                       nil my/tty-device nil 'silent)))))
@@ -186,10 +198,9 @@
 (load-theme 'dracula t)
 
 ;; =================================================================
-;; Desktop Session
-;; =================================================================
-(require 'desktop)
-(desktop-read)
+;; Desktop Session (disabled — restores old window layouts)
+;; (require 'desktop)
+;; (desktop-read)
 
 ;; =================================================================
 ;; Tab / Indent Configuration
@@ -506,8 +517,11 @@
 ;; Shell Management (On-demand instead of auto-create)
 ;; =================================================================
 
-(defvar my-shell-devices '("t41" "t40" "t33" "t32" "t23")
-  "List of device names for shell buffers.")
+(defvar my-shell-devices
+  (if my/is-wsl
+      '()
+    '("t41" "t40" "t33" "t32" "t23"))
+  "List of device names for shell buffers. Empty on WSL/local.")
 
 (defun my-create-device-shells ()
   "Create shell buffers for all device names."
@@ -588,20 +602,26 @@
 
 ;; =================================================================
 ;; Auto-create 3 shells on startup (shell-000 visible, others in background)
-;; =================================================================
+;; Auto-create shells on startup (WSL: 1; remote: 3)
 (add-hook 'emacs-startup-hook
           (lambda ()
-            ;; Create 3 numbered shell buffers
-            (shell)
-            (rename-buffer "*shell-000*")
-            (local-set-key [f11] 'delete-other-windows)
-            (shell)
-            (rename-buffer "*shell-001*")
-            (shell)
-            (rename-buffer "*shell-002*")
-            ;; Back to shell-000, full screen
-            (switch-to-buffer "*shell-000*")
-            (delete-other-windows)))
+            (if my/is-wsl
+                ;; WSL/local: single shell
+                (progn
+                  (shell)
+                  (rename-buffer "*shell*")
+                  (local-set-key [f11] 'delete-other-windows)
+                  (delete-other-windows))
+              ;; Remote: 3 numbered shells
+              (shell)
+              (rename-buffer "*shell-000*")
+              (local-set-key [f11] 'delete-other-windows)
+              (shell)
+              (rename-buffer "*shell-001*")
+              (shell)
+              (rename-buffer "*shell-002*")
+              (switch-to-buffer "*shell-000*")
+              (delete-other-windows))))
 
 (provide 'init)
 ;;; init.el ends here
