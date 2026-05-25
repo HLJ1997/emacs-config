@@ -83,11 +83,24 @@
 ;; Appearance
 ;; =================================================================
 
-;; Time display
-(setq display-time-24hr-format t)
-(setq display-time-day-and-date t)
-(setq display-time-format "%m-%d  %A %H:%M")
-(display-time)
+;; Mode line: clean and minimal — buffer name, modified, line:col, mode
+(setq-default mode-line-format
+              '("%e"
+                mode-line-modified       ; ** for modified, -- for clean
+                " "
+                mode-line-buffer-identification  ; buffer name
+                "  "
+                mode-line-position      ; line:col
+                "  ("
+                mode-name               ; major mode name only, no minor modes
+                ")  "
+                mode-line-end-spaces))
+
+;; Buffer List: use regular window (no side windows to avoid F11 issues)
+(add-to-list 'display-buffer-alist
+             '("\\*Buffer List\\*"
+               (display-buffer-reuse-window display-buffer-pop-up-window)
+               (window-width . 0.5)))
 
 ;; UI elements
 (menu-bar-mode -1)
@@ -136,6 +149,35 @@
 (global-set-key (kbd "C--") (lambda () (interactive)
                                 (let ((ht (face-attribute 'default :height)))
                                   (set-face-attribute 'default nil :height (- ht 10)))))
+
+;; Frame/window title: show hostname and IP so you know which server you're on
+(defvar my/server-ip nil
+  "Cached primary IP address of this server.")
+
+(defun my/get-server-ip ()
+  "Return the primary IP address of this machine."
+  (or my/server-ip
+      (setq my/server-ip
+            (string-trim
+             (shell-command-to-string
+              "hostname -I 2>/dev/null | awk '{print $1}'")))))
+
+(defvar my/tty-device nil
+  "Terminal device path for writing title escape sequences.")
+
+(defun my/init-tty-and-title ()
+  "Detect terminal device and set window title with hostname + IP."
+  (setq my/tty-device (terminal-name))
+  (let ((title (format "Emacs@%s — %s" (system-name) (my/get-server-ip))))
+    ;; Set Emacs frame title
+    (setq frame-title-format title)
+    ;; Write to terminal (xterm/SSH) window title bar
+    (when my/tty-device
+      (ignore-errors
+        (write-region (format "\033]0;%s\007" title)
+                      nil my/tty-device nil 'silent)))))
+
+(add-hook 'after-init-hook #'my/init-tty-and-title)
 
 ;; Color theme
 (setq ansi-color-names-vector
@@ -345,6 +387,8 @@
 (global-set-key [C-f10] 'replace-string-regexp)
 (global-set-key [S-f10] 'replace-string-reg-t)
 (global-set-key [f11] 'delete-other-windows)
+(global-set-key "\e[23~" 'delete-other-windows)  ; raw xterm F11 sequence
+(winner-mode 1)                        ; C-c ←/→ undo/redo window changes
 (global-set-key [S-f11] 'delete-window)
 (global-set-key [f12] 'split-window-vertically)
 (global-set-key [S-f12] 'split-window-horizontally)
@@ -541,6 +585,23 @@
 ;; Global Font Lock
 ;; =================================================================
 (global-font-lock-mode t)
+
+;; =================================================================
+;; Auto-create 3 shells on startup (shell-000 visible, others in background)
+;; =================================================================
+(add-hook 'emacs-startup-hook
+          (lambda ()
+            ;; Create 3 numbered shell buffers
+            (shell)
+            (rename-buffer "*shell-000*")
+            (local-set-key [f11] 'delete-other-windows)
+            (shell)
+            (rename-buffer "*shell-001*")
+            (shell)
+            (rename-buffer "*shell-002*")
+            ;; Back to shell-000, full screen
+            (switch-to-buffer "*shell-000*")
+            (delete-other-windows)))
 
 (provide 'init)
 ;;; init.el ends here

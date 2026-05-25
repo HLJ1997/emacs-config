@@ -73,7 +73,7 @@
 
 ;; General Emacs/XEmacs-compatibility compile-time macros
 (eval-when-compile
-  (require 'cl)
+  (with-no-warnings (require 'cl))
   (defmacro cond-emacs-xemacs (&rest args)
     (cond-emacs-xemacs-macfn
      args "`cond-emacs-xemacs' must return exactly one element"))
@@ -139,7 +139,7 @@
 			     'ignore)))))))))))
 
 (eval-when-compile
-  (require 'cl)
+  (with-no-warnings (require 'cl))
   (defvar init-file-loaded)		; would be useful in Emacs, too...
   (defvar file-name-buffer-file-type-alist))
 
