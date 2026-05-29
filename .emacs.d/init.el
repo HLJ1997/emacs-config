@@ -133,10 +133,18 @@
 (blink-cursor-mode 0)
 
 ;; Font
-(when (display-graphic-p)
-  (condition-case nil
-      (set-face-attribute 'default nil :font "JetBrains Mono-16")
-    (error (message "Failed to set JetBrains Mono font, using default."))))
+(defun my/set-default-font ()
+  "Set the default monospace font for GUI frames."
+  (when (display-graphic-p)
+    (condition-case nil
+        (set-face-attribute 'default nil :font "JetBrains Mono-24")
+      (error (message "Failed to set JetBrains Mono font, using default.")))))
+
+;; Set for current frame (direct startup, non-daemon)
+(my/set-default-font)
+
+;; Ensure font is set for new frames (daemon-safe)
+(add-to-list 'default-frame-alist '(font . "JetBrains Mono-24"))
 
 ;; Chinese font fallback
 (defvar my/chinese-font "Noto Sans CJK SC"
@@ -152,6 +160,7 @@
 (add-hook 'after-make-frame-functions
           (lambda (frame)
             (when (display-graphic-p frame)
+              (my/set-default-font)
               (my/set-font-fallbacks))))
 
 ;; Font zoom keys
