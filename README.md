@@ -1,201 +1,133 @@
-# Emacs 配置
+# Emacs Configuration
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+IC 设计开发环境（Verilog / Specman / Dcsh + C / C++），终端模式，多服务器 SSH 工作流。
 
-适用于 Ubuntu 22.04/24.04/26.04 的 Emacs 配置，面向 IC 设计（Verilog / Specman / Dcsh）和 C/C++ 开发环境。
+## 适用环境
 
----
-
-## 功能特性
-
-- **IC 设计语言**：Verilog、Specman/e、DC Shell、Tcl
-- **C/C++ 开发**：`company-clang` 自动补全，支持 GCC 路径自动检测，`.cpp` ↔ `.h` 快速切换
-- **自动补全**：Company 模式，输入即触发（延迟 0.2 秒）
-- **主题**：Dracula（GUI），JetBrains Mono 16 号字体
-- **CUA 模式**：类 Windows 快捷键 `C-x` 剪切、`C-c` 复制、`C-v` 粘贴
-- **Shell 管理**：设备命名 shell 或编号 shell，支持快捷键批量创建
-- **模板系统**：C/C++、Verilog、Python、Makefile 等文件模板
-
----
+| 项目 | 要求 |
+|---|---|
+| 操作系统 | Ubuntu 22.04 / 24.04 |
+| GCC | GCC 11（自动检测，WSL 也支持） |
+| 连接方式 | SSH 终端（`emacs -nw`）或 WSL 本地 |
+| Emacs 版本 | 29+（native comp 可选） |
 
 ## 快速开始
 
 ```bash
-git clone https://github.com/HLJ1997/emacs-config.git ~/emacs-config
-ln -sf ~/emacs-config/.emacs ~/.emacs
-ln -sf ~/emacs-config/.emacs.d ~/.emacs.d
+git clone https://github.com/HLJ1997/emacs-config.git ~/emacs-config-hlj
+ln -sf ~/emacs-config-hlj/.emacs.d ~/.emacs.d
+ln -sf ~/emacs-config-hlj/.emacs ~/.emacs
 ```
 
-然后启动 Emacs。
+首次启动会自动从 MELPA 安装依赖包。
 
----
+## 依赖
 
-## 目录结构
+### 系统工具
 
-```
-.emacs                    # 入口文件，加载 .emacs.d/init.el
-.emacs.d/
-  init.el                 # 主配置文件（约 480 行）
-  plugins/                # 外部工具
-    verilog-mode.el       # Verilog 编辑模式
-    template.el           # 模板系统
-    syn-keyword.el        # Synopsys Tcl 关键字
-    color-set-*.el        # 配色方案
-  elpa/                   # MELPA 包（company、dracula-theme 等）
-  themes/                 # 本地主题（dracula、monokai、zenburn）
-  fireplace/              # fireplace 特效
-  emacs_plugins/          # cmake-mode
+```bash
+sudo apt install gcc fonts-jetbrains-mono fonts-noto-cjk
 ```
 
----
+### Emacs 包（MELPA 自动安装）
 
-## 快捷键说明
+- `dracula-theme` — 主题
+- `company` + `company-clang` — 代码补全
+- `diredfl`（可选）— Dired 彩色显示
+- `all-the-icons-dired`（可选）— Dired 图标
 
-### 文件与缓冲区
+## 支持的语言/模式
 
-| 快捷键 | 功能 |
-|--------|------|
-| `C-o` | 打开文件 |
-| `C-s` | 保存文件 |
-| `M-s` | 保存文件（先自动将 Tab 替换为空格） |
-| `C-F4` | 关闭当前缓冲区 |
-| `M-F4` | 保存所有缓冲区并退出 Emacs |
-| `C-f6` | 切换到其他缓冲区 |
-| `S-f6` | 打开缓冲区菜单 |
-| `f6` | 切换到下一个窗口 |
+| 语言 | 模式 | 自动识别后缀 |
+|---|---|---|
+| Verilog | `verilog-mode` | `.v` `.sv` `.svh` `.inc` |
+| C / C++ | `c-mode` / `c++-mode` | `.c` `.cpp` `.h` `.cu` |
+| CMake | `cmake-mode` | `CMakeLists.txt` `.cmake` |
+| Protobuf | `protobuf-mode` | `.proto` |
+| Specman | `specman-mode` | `.e` `.e3` `.load` `.ecom` `.etst` |
+| Dcsh | `dcsh-mode` | `.scr` |
+| Tcl | `tcl-mode` | `.pt` `.synopsys_*_setup` |
+| Shell | `shell-script-mode` | `bashrc` `.bashrc` `.cfg` |
+
+## WSL vs 远程服务器
+
+配置文件通过 `/proc/version` 自动检测环境（`my/is-wsl`），行为差异：
+
+| 功能 | WSL 本地 | 远程服务器 |
+|---|---|---|
+| 终端标题栏（xterm 逃逸码） | 跳过 | `Emacs@主机名 — IP` |
+| 启动自动创建 shell | 1 个 `*shell*` | 3 个 `*shell-000*` ~ `*shell-002*` |
+| 设备 shell 快捷创建 | 空列表 | `t41 t40 t33 t32 t23` |
+
+## 快捷键
 
 ### 编辑
 
 | 快捷键 | 功能 |
-|--------|------|
-| `C-d` | 删除整行 |
-| `C-<backspace>` | 向后删除一个单词 |
-| `C-<delete>` | 向前删除一个单词 |
-| `f4` | 将选区复制到寄存器 `t` |
-| `S-f4` | 从寄存器 `t` 粘贴 |
-| `C-c C-t` | 插入当前日期时间 |
-| `%` | VI 风格：光标在括号上时跳转到匹配括号，否则插入 `%` |
-| `鼠标右键` | 缓冲区菜单 |
+|---|---|
+| `C-o` | 打开文件 |
+| `C-s` | 保存 |
+| `C-d` | 删整行 |
+| `C-<backspace>` | 向前删词 |
+| `C-<delete>` | 向后删词 |
+| `M-s` | 保存并 tab→space |
+| `C-c C-t` | 插入日期时间 |
+| `C-=` / `C--` | 放大/缩小字体 |
 
-> **CUA 模式** 已启用：`C-x` 剪切、`C-c` 复制、`C-v` 粘贴、`C-z` 撤销、`C-a` 全选。在无选区时，`C-c` / `C-x` / `C-v` 恢复为 Emacs 原生前缀键。
-
-### 导航与搜索
+### 窗口
 
 | 快捷键 | 功能 |
-|--------|------|
-| `f3` | 向前搜索 |
-| `S-f3` | 向后搜索 |
-| `C-f3` | 向前正则搜索 |
-| `C-S-f3` | 向后正则搜索 |
-| `f5` | 跳转到指定行 |
-| `C-f8` | C++ 源文件与头文件切换（`.cpp` ↔ `.h`） |
-
-### 书签
-
-| 快捷键 | 功能 |
-|--------|------|
-| `f1` | 跳转到默认书签 1 |
-| `C-f1` | 在当前位置设置默认书签 1 |
-| `f2` | 跳转到默认书签 2 |
-| `C-f2` | 在当前位置设置默认书签 2 |
-| `S-f2` | 跳转到任意书签 |
-| `S-C-f2` | 设置任意书签 |
-
-### 替换
-
-| 快捷键 | 功能 |
-|--------|------|
-| `f9` | 交互式替换（逐个确认） |
-| `C-f9` | 交互式正则替换 |
-| `S-f9` | 用寄存器 `t` 的内容作为搜索词，交互式替换 |
-| `f10` | 字符串替换（不确认） |
-| `C-f10` | 正则字符串替换 |
-| `S-f10` | 用寄存器 `t` 的内容作为搜索词，直接替换 |
-
-### 窗口管理
-
-| 快捷键 | 功能 |
-|--------|------|
-| `f11` | 关闭其他窗口，最大化当前窗口 |
+|---|---|
+| `f6` | 切换窗口 |
+| `C-f6` | 切换 buffer |
+| `S-f6` | buffer 列表 |
+| `f11` | 最大化当前窗口 |
 | `S-f11` | 关闭当前窗口 |
-| `f12` | 垂直分割窗口（上下分屏） |
-| `S-f12` | 水平分割窗口（左右分屏） |
-| `M-f12` | 水平分割窗口（左右分屏） |
+| `f12` / `S-f12` | 垂直/水平分屏 |
+| `C-c ←/→` | undo/redo 窗口布局 |
+
+### 搜索 & 替换
+
+| 快捷键 | 功能 |
+|---|---|
+| `f3` / `S-f3` | 向前/向后搜索 |
+| `f9` / `C-f9` | 查询替换 / 正则替换 |
+| `f10` / `C-f10` | 字符串替换 / 正则替换 |
+| `S-f9` / `S-f10` | 用寄存器的内容替换 |
+
+### 代码
+
+| 快捷键 | 功能 |
+|---|---|
+| `C-f8` | `.cpp` ↔ `.h` 切换 |
+| `M-/` | 触发补全 |
+| `f5` | 跳转到行 |
 
 ### Shell
 
 | 快捷键 | 功能 |
-|--------|------|
-| `C-c s` | 创建 4 个编号 Shell 缓冲区（`shell-000`、`shell-001`...） |
-| `f7` | Shell 中上一条匹配的命令 |
-| `S-f7` | Shell 中下一条匹配的命令 |
+|---|---|
+| `S-f7` / `f7` | shell 历史向前/向后匹配 |
+| `C-c s` | 新建 4 个 shell buffer |
 
-按一次 `C-c s` 创建 4 个新 shell，多次按压会继续追加（如第二次创建 `shell-004` ~ `shell-007`），自动切换到第一个新创建的 shell。
+## Shell 工作流
 
----
+关于工作流的建议：当 SSH 连接到不同服务器时，可以在各 shell buffer 内手动执行 SSH 命令。例如：
 
-## 语言模式
+- `*shell-000*` → `ssh t41`
+- `*shell-001*` → `ssh t40`
+- 依此类推
 
-| 文件扩展名 | 模式 |
-|-----------|------|
-| `.v` `.sv` `.vh` `.inc` | Verilog |
-| `.scr` | DC Shell |
-| `.e` `.e3` `.load` `.ecom` `.etst` | Specman |
-| `.pt` `.synopsys_*.setup` | Tcl |
-| `.cpp` `.h` `.cu` | C/C++ |
-| `.ld` `vfl_*` `vflist` | C |
-| `CMakeLists.txt` `.cmake` | CMake |
-| `.proto` | Protobuf |
+（在 WSL 本地使用时只有一个 `*shell*` buffer。）
 
----
+## 目录结构
 
-## 自定义命令
-
-| 命令 | 说明 |
-|------|------|
-| `M-x my-create-device-shells` | 为设备创建 shell（t41、t40、t33、t32、t23） |
-| `M-x my-create-numbered-shells` | 交互式输入数量，创建编号 shell |
-| `M-x my-create-next-4-shells` | 基于已有 shell 继续创建 4 个 |
-| `M-x switch-source-file` | `.cpp` 与 `.h` 文件切换 |
-| `M-x save-buffer-no-tab` | 保存前先替换 Tab 为空格 |
-| `M-x insert-current-date-time` | 插入当前日期时间 |
-| `M-x desktop-save` | 保存当前会话 |
-| `M-x global-font-lock-mode` | 切换语法高亮（打开大文件时可关闭提速） |
-
----
-
-## 安装新插件
-
-```elisp
-M-x package-refresh-contents
-M-x package-install RET <插件名> RET
 ```
-
-或在终端执行：
-
-```bash
-emacs --batch --eval "(package-refresh-contents)" --eval "(package-install '<插件名>)"
+~/.emacs.d/ -> emacs-config-hlj/.emacs.d/
+  init.el              # 主配置
+  custom.el            # Customize 自动生成的变量
+  plugins/             # 本地插件（verilog-mode, dcsh-mode 等）
+  themes/              # 主题文件
+  template/            # 新建文件模板
+  elpa/                # MELPA 安装的包（自动生成）
 ```
-
----
-
-## Claude Code Skill
-
-本仓库包含 Claude Code skill，方便在 Claude Code 中快速管理配置：
-
-```bash
-ln -sf ~/emacs-config/.claude/skills/emacs-config.md ~/.claude/skills/emacs-config.md
-```
-
-在 Claude Code 中输入 `/emacs-config` 即可加载，支持：
-- 查看项目结构和常用操作
-- 快速编辑 `init.el` 的标准流程
-- 添加新快捷键的模板
-- 推送到 GitHub 的命令
-- 故障排查（启动失败、push 超时、company-clang 问题）
-
----
-
-## 许可证
-
-[MIT](LICENSE)
