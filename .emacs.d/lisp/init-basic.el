@@ -14,6 +14,10 @@
 (setq x-select-enable-clipboard t)
 (setq mouse-yank-at-point t)
 
+;; Use bash as default shell
+(setq explicit-shell-file-name "/bin/bash")
+(setq shell-file-name "/bin/bash")
+
 ;; History
 (setq history-length 500)
 (setq comint-input-ignoredups t)
