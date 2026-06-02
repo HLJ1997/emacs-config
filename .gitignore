@@ -5,6 +5,15 @@ ac-comphist.dat
 bookmarks
 *.elc
 tramp
+*~
+
+# Custom file (machine-specific)
+custom.el
+custom.el~
+
+# ELPA archives (auto-generated)
+elpa/archives/
+elpa/gnupg/
 
 # Session files
 session.*
