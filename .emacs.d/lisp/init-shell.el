@@ -5,8 +5,26 @@
 
 ;;; Code:
 
+;; ~/.bashrc detects $INSIDE_EMACS and sets a simple PS1 automatically.
+;; It also defines a conda wrapper to preserve PS1 after activate/deactivate.
+;; No shell-mode-hook needed — everything is handled in .bashrc.
+
 (defvar my-shell-devices '("t41" "t40" "t33" "t32" "t23")
   "List of device names for shell buffers.")
+
+;; Auto-create a shell buffer after Emacs startup
+(defun my/auto-create-shell-on-startup ()
+  "Create a shell buffer named '001' after Emacs finishes starting up.
+The shell buffer is displayed fullscreen (sole window)."
+  (when (get-buffer "*shell*")
+    (kill-buffer "*shell*"))
+  (when (get-buffer "001")
+    (kill-buffer "001"))
+  (shell)
+  (rename-buffer "001")
+  (delete-other-windows))
+
+(add-hook 'emacs-startup-hook 'my/auto-create-shell-on-startup)
 
 (defun my-create-device-shells ()
   "Create shell buffers for all device names."

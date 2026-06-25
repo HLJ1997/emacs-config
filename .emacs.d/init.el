@@ -71,18 +71,5 @@
 (require 'desktop)
 (desktop-read)
 
-;; Auto-create 3 shells on startup
-(add-hook 'emacs-startup-hook
-          (lambda ()
-            (shell)
-            (rename-buffer "*shell-000*")
-            (local-set-key [f11] 'delete-other-windows)
-            (shell)
-            (rename-buffer "*shell-001*")
-            (shell)
-            (rename-buffer "*shell-002*")
-            (switch-to-buffer "*shell-000*")
-            (delete-other-windows)))
-
 (provide 'init)
 ;;; init.el ends here
