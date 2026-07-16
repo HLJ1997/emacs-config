@@ -15,6 +15,11 @@
 (global-set-key (kbd "C-c C-t") 'insert-current-date-time)
 (global-set-key (kbd "M-s") 'save-buffer-no-tab)
 
+;; Graphical frame display controls.  MobaXterm may not support true
+;; fullscreen, so keep maximization as a reliable fallback.
+(global-set-key (kbd "C-c f") #'toggle-frame-fullscreen)
+(global-set-key (kbd "C-c m") #'toggle-frame-maximized)
+
 ;; F-keys
 (global-set-key [f1] 'bookmark-jump-default1)
 (global-set-key [C-f1] 'bookmark-set-default1)

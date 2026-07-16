@@ -8,20 +8,72 @@
 ;; CUA Mode (Windows-style editing keys)
 (cua-mode t)
 
-;; Mode line: clean and minimal
-(setq-default mode-line-format
-              '("%e"
-                mode-line-modified
-                " "
-                mode-line-buffer-identification
-                "  "
-                mode-line-position
-                "  ("
-                mode-name
-                ")  "
-                mode-line-end-spaces))
+;; Doom Modeline: modern mode line with VCS, position and mode information.
+;; Emacs 26 cannot use the current Doom Modeline release (its `compat'
+;; dependency requires newer Emacs), so this setup pins compatible v3.0.0.
+(require 'doom-modeline)
 
-;; Buffer List: use regular window
+;; Show the Git branch in shell buffers too.  The built-in `vcs' segment
+;; only knows about the visited file; a shell buffer has no buffer-file-name.
+(doom-modeline-def-segment my-shell-vcs
+  "Display the Git branch for a shell buffer's `default-directory'."
+  (when (and (eq major-mode 'shell-mode)
+             (executable-find "git")
+             (locate-dominating-file default-directory ".git"))
+    (let ((branch (string-trim
+                   (shell-command-to-string
+                    (format "git -C %s branch --show-current 2>/dev/null"
+                            (shell-quote-argument default-directory))))))
+      (when (> (length branch) 0)
+        (concat " Git:" branch " ")))))
+
+;; Add the shell-specific branch segment after the normal VC segment.
+(doom-modeline-def-modeline 'main
+  '(bar workspace-name window-number modals matches buffer-info remote-host buffer-position word-count parrot selection-info)
+  '(objed-state misc-info persp-name battery grip irc mu4e gnus github debug lsp minor-modes input-method indent-info buffer-encoding major-mode process vcs my-shell-vcs checker))
+
+(setq doom-modeline-height 32
+      ;; Do not suppress segments in narrower windows.
+      doom-modeline-window-width-limit nil
+      doom-modeline-buffer-file-name-style 'truncate-upto-root
+      ;; Icon fonts are not installed on this host; keep the display clean.
+      doom-modeline-icon nil
+      doom-modeline-unicode-fallback t
+      doom-modeline-minor-modes t
+      doom-modeline-buffer-encoding t
+      ;; Show indentation width/style when relevant.
+      doom-modeline-indent-info t)
+(doom-modeline-mode 1)
+;; Re-apply the main modeline after all packages and local modes initialize.
+(doom-modeline-set-main-modeline t)
+(force-mode-line-update t)
+
+;; Keep the requested 24-hour clock, but render it as the final segment.
+;; This avoids `misc-info' placing the clock earlier in the modeline.
+(doom-modeline-def-segment my-time
+  "Display the current time at the far right of the mode-line."
+  (propertize (format-time-string "%H:%M") 'face 'mode-line))
+
+(setq display-time-24hr-format t
+      display-time-format "%H:%M"
+      display-time-default-load-average nil)
+(display-time-mode -1)
+(setq global-mode-string nil)
+(doom-modeline-def-modeline 'main
+  '(bar workspace-name window-number modals matches buffer-info remote-host buffer-position word-count parrot selection-info)
+  '(objed-state misc-info persp-name battery grip irc mu4e gnus github debug lsp minor-modes input-method indent-info buffer-encoding major-mode process vcs my-shell-vcs checker my-time))
+(doom-modeline-def-segment my-project
+  "Display the current Git project name when available."
+  (when-let ((root-dir (locate-dominating-file default-directory ".git")))
+    (concat " Project:"
+            (file-name-nondirectory (directory-file-name root-dir))
+            " ")))
+
+;; Add recommended project and diagnostics indicators before the clock.
+(doom-modeline-def-modeline 'main
+  '(bar workspace-name window-number modals matches buffer-info remote-host buffer-position word-count parrot selection-info)
+  '(objed-state misc-info persp-name battery grip irc mu4e gnus github debug lsp minor-modes input-method indent-info buffer-encoding major-mode process vcs my-shell-vcs my-project checker my-time))
+(force-mode-line-update t)
 (add-to-list 'display-buffer-alist
              '("\\*Buffer List\\*"
                (display-buffer-reuse-window display-buffer-pop-up-window)
@@ -31,9 +83,12 @@
 (menu-bar-mode -1)
 (when (display-graphic-p)
   (tool-bar-mode -1)
-  (scroll-bar-mode 1))
+  (scroll-bar-mode -1))
+
 (column-number-mode t)
-(global-display-line-numbers-mode t)
+(global-display-line-numbers-mode -1)
+(dolist (hook '(prog-mode-hook text-mode-hook conf-mode-hook))
+  (add-hook hook #'display-line-numbers-mode))
 (temp-buffer-resize-mode 1)
 
 ;; Editing helpers
@@ -42,14 +97,22 @@
 (global-auto-revert-mode t)
 
 ;; Cursor
-(set-cursor-color "#00ff00")
+(set-cursor-color "#88c0d0")
 (blink-cursor-mode 0)
 
-;; Font
+;; Fira Code is installed in the user font directory and is used for GUI frames.
+(defconst my/gui-font-family "Fira Code"
+  "Default font family used by graphical Emacs frames.")
+(defconst my/gui-font-height 160
+  "Default graphical font height in tenths of a point.")
+(add-to-list 'default-frame-alist
+             `(font . ,(format "%s-16" my/gui-font-family)))
+(add-to-list 'default-frame-alist `(font-backend . "xft"))
 (when (display-graphic-p)
-  (condition-case nil
-      (set-face-attribute 'default nil :font "JetBrains Mono-16")
-    (error (message "Failed to set JetBrains Mono font, using default."))))
+  (set-face-attribute 'default nil
+                      :family my/gui-font-family
+                      :height my/gui-font-height
+                      :weight 'normal))
 
 ;; Chinese font fallback
 (defvar my/chinese-font "Noto Sans CJK SC"
@@ -174,14 +237,16 @@
 (defun my/switch-theme ()
   "Interactively switch theme using completing-read."
   (interactive)
-  (let* ((choices (mapcar (lambda (t) (cons (cadr t) (car t))) my/themes))
+  (let* ((choices (mapcar (lambda (entry)
+                            (cons (cadr entry) (car entry)))
+                          my/themes))
          (label (completing-read "Theme: " choices nil t))
          (theme (cdr (assoc label choices))))
     (when theme
       (my/load-theme theme))))
 
 ;; Default theme
-(my/load-theme 'doom-tokyo-night)
+(my/load-theme 'doom-one)
 
 ;; Keybinding: C-c t to switch theme
 (global-set-key (kbd "C-c t") 'my/switch-theme)

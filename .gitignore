@@ -6,6 +6,7 @@ bookmarks
 *.elc
 tramp
 *~
+*.bak-*
 
 # Custom file (machine-specific)
 custom.el
